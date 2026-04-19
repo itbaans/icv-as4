@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CBIR Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #F2F0EB;
+  --surface:   #FAF9F6;
+  --surface2:  #F0EEE9;
+  --border:    #E0DDD6;
+  --border2:   #CBC8C0;
+  --text:      #25231E;
+  --text-2:    #6B6860;
+  --text-3:    #9B9890;
+  --accent:    #4A7560;
+  --acc-lt:    #E6EFEA;
+  --acc-mid:   #BACED4;
+  --miss:      #8B4F3F;
+  --miss-lt:   #F5EBE8;
+  --r:         10px;
+  --r-sm:      6px;
+  --sh:        0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+  --sh-lg:     0 2px 8px rgba(0,0,0,.08), 0 12px 40px rgba(0,0,0,.08);
+  --font:      'Geist', sans-serif;
+  --serif:     'Instrument Serif', serif;
+  --mono:      'DM Mono', monospace;
+  --t:         0.17s ease;
+}
+
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+
+/* Shell */
+.shell { display: grid; grid-template-rows: 57px 1fr; height: 100vh; }
+
+header {
+  padding: 0 24px; border-bottom: 1px solid var(--border);
+  background: var(--surface); display: flex; align-items: center; gap: 14px;
+}
+.logo { font-family: var(--serif); font-size: 1.4rem; }
+.logo em { color: var(--accent); font-style: normal; }
+.tagline { font-size: .72rem; color: var(--text-3); font-family: var(--mono); border-left: 1px solid var(--border2); padding-left: 14px; }
+
+/* Three columns */
+.workspace { display: grid; grid-template-columns: 280px 1fr 1fr; height: 100%; overflow: hidden; }
+.col { overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.col + .col { border-left: 1px solid var(--border); }
+.sidebar { background: var(--surface); }
+
+/* Section label */
+.sl { font-size: .65rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 7px; }
+
+/* Card */
+.card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--r); padding: 11px; display: flex; flex-direction: column; gap: 8px; }
+
+label { display: block; font-size: .71rem; font-weight: 500; color: var(--text-2); margin-bottom: 3px; }
+
+select {
+  appearance: none; width: 100%; background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 6px 26px 6px 8px; font-family: var(--font); font-size: .79rem; color: var(--text); cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%236B6860' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+  transition: border-color var(--t);
+}
+select:focus { outline: none; border-color: var(--accent); }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+
+.slider-row { display: flex; align-items: center; gap: 8px; }
+input[type=range] { flex: 1; accent-color: var(--accent); }
+.sv { font-family: var(--mono); font-size: .73rem; color: var(--accent); font-weight: 500; min-width: 18px; text-align: right; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 7px 13px; border-radius: var(--r-sm); font-family: var(--font); font-size: .79rem;
+  font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all var(--t);
+}
+.btn-primary { background: var(--accent); color: #fff; width: 100%; padding: 10px; font-size: .84rem; font-weight: 600; }
+.btn-primary:hover { background: #3d6351; }
+.btn-primary:active { transform: scale(.98); }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.btn-ghost { background: transparent; color: var(--text-2); border-color: var(--border); font-size: .73rem; padding: 5px 9px; }
+.btn-ghost:hover { background: var(--surface2); border-color: var(--border2); }
+.btn-secondary { background: var(--acc-lt); color: var(--accent); border-color: var(--acc-mid); width: 100%; font-size: .76rem; padding: 6px; }
+.btn-secondary:hover { background: var(--acc-mid); }
+
+.mode-toggle {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3px;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 3px;
+}
+.mode-toggle button { padding: 5px; border-radius: 4px; font-size: .71rem; font-weight: 500; font-family: var(--font); cursor: pointer; border: none; background: transparent; color: var(--text-2); transition: all var(--t); }
+.mode-toggle button.active { background: var(--surface); color: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,.08); font-weight: 600; }
+
+.crop-hint { background: var(--acc-lt); border: 1px solid var(--acc-mid); border-radius: var(--r-sm); padding: 6px 8px; font-size: .71rem; color: var(--accent); line-height: 1.5; display: none; }
+.crop-hint.visible { display: block; }
+
+/* Query image column */
+.query-col { background: var(--bg); }
+
+.query-img-wrap {
+  position: relative; width: 100%;
+  /* fill available height minus meta/status below — flex will handle this */
+  flex: 1; min-height: 0;
+  border-radius: var(--r); overflow: hidden; border: 1px solid var(--border); background: var(--surface);
+}
+.query-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.query-placeholder { width: 100%; height: 100%; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--text-3); font-size: .76rem; }
+.query-placeholder svg { opacity: .3; }
+
+#cropCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: var(--r); cursor: crosshair; display: none; }
+#cropCanvas.active { display: block; }
+
+.meta-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 11px; flex-shrink: 0; }
+.meta-title { font-family: var(--serif); font-size: 1.05rem; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta-row { font-family: var(--mono); font-size: .68rem; color: var(--text-3); line-height: 1.9; }
+.meta-row span { color: var(--text-2); }
+
+.status-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 6px 10px; font-family: var(--mono); font-size: .7rem; color: var(--text-3); display: flex; align-items: center; gap: 7px; min-height: 30px; flex-shrink: 0; }
+.status-bar.ok  { color: var(--accent); border-color: var(--acc-mid); background: var(--acc-lt); }
+.status-bar.err { color: var(--miss);   border-color: #e0b8b0;        background: var(--miss-lt); }
+.spinner { width: 12px; height: 12px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; display: none; }
+.status-bar.busy .spinner { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Results column */
+.results-col { background: var(--bg); }
+
+.results-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.results-title { font-family: var(--serif); font-size: 1.05rem; }
+.results-actions { display: flex; gap: 6px; align-items: center; }
+
+.prec-badge { font-family: var(--mono); font-size: .66rem; background: var(--acc-lt); color: var(--accent); border-radius: 20px; padding: 2px 8px; font-weight: 500; display: none; }
+.prec-badge.on { display: inline-block; }
+
+.results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 9px; }
+
+.rc {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  overflow: hidden; transition: transform var(--t), box-shadow var(--t);
+  animation: fadeUp .22s ease both;
+}
+.rc:hover { transform: translateY(-2px); box-shadow: var(--sh-lg); }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+.rc img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.rc-foot { padding: 6px 8px; border-top: 1px solid var(--border); }
+.rc-rank { font-family: var(--mono); font-size: .6rem; color: var(--text-3); margin-bottom: 1px; }
+.rc-lbl  { font-size: .72rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.rc-dist { font-family: var(--mono); font-size: .62rem; color: var(--text-3); margin-top: 1px; }
+
+/* Match / miss — only shows when class is known */
+.rc.match { border-color: #A8C8B4; }
+.rc.miss  { border-color: #D4AA9E; }
+.rc.match .rc-rank::before { content: "✓  "; color: var(--accent); }
+.rc.miss  .rc-rank::before { content: "✗  "; color: var(--miss); }
+.rc.match .rc-lbl { color: var(--accent); }
+.rc.miss  .rc-lbl { color: var(--miss); }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 240px; gap: 10px; color: var(--text-3); font-size: .76rem; text-align: center; }
+.empty-state svg { opacity: .2; }
+
+/* Snapshot modal */
+#snapOverlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: center; justify-content: center; z-index: 999; }
+#snapOverlay.open { display: flex; }
+.snap-modal { background: var(--surface); border-radius: var(--r); padding: 18px; max-width: 88vw; max-height: 90vh; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--sh-lg); }
+.snap-modal img { max-width: 100%; max-height: 68vh; object-fit: contain; border-radius: 6px; border: 1px solid var(--border); }
+.snap-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header>
+  <div class="logo">CBIR <em>Explorer</em></div>
+  <div class="tagline">Content-Based Image Retrieval · Paris-6k &amp; Food-101</div>
+</header>
+
+<div class="workspace">
+
+  <!-- ── COL 1: CONFIG ────────────────────────────────── -->
+  <aside class="col sidebar">
+
+    <div>
+      <div class="sl">Dataset &amp; Image</div>
+      <div class="card">
+        <div><label>Dataset</label>
+          <select id="datasetSel">
+            <option value="food-101">food-101</option>
+            <option value="paris6k">paris6k</option>
+          </select>
+        </div>
+        <div><label>Class</label><select id="classSel"></select></div>
+        <div><label>Image</label><select id="imageSel"></select></div>
+        <button class="btn btn-secondary" onclick="loadRandom()">⟳ &nbsp;Surprise Me</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="sl">Query Mode</div>
+      <div class="card">
+        <div class="mode-toggle">
+          <button id="modeFull" class="active" onclick="setMode('full')">Full Picture</button>
+          <button id="modeCrop" onclick="setMode('crop')">Crop Region</button>
+        </div>
+        <div class="crop-hint" id="cropHint">✂ Drag on the image to select a region, then Retrieve.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sl">Retrieval Config</div>
+      <div class="card">
+        <div><label>Feature Descriptor</label>
+          <select id="featureSel">
+            <option value="hog">HOG — shape / gradient</option>
+            <option value="lbp">LBP — local texture</option>
+            <option value="color_hist">Color Histogram</option>
+            <option value="sift">SIFT BoVW</option>
+            <option value="color_sift">Color SIFT BoVW</option>
+          </select>
+        </div>
+        <div class="row2">
+          <div><label>Distance</label>
+            <select id="metricSel">
+              <option value="euclidean">Euclidean</option>
+              <option value="cosine">Cosine</option>
+              <option value="chi2">Chi-Squared</option>
+            </select>
+          </div>
+          <div><label>Method</label>
+            <select id="methodSel">
+              <option value="brute_force">Brute Force</option>
+              <option value="kd_tree">KD-Tree</option>
+              <option value="pca_brute">PCA + BF</option>
+              <option value="pca_kd_tree">PCA + KD</option>
+            </select>
+          </div>
+        </div>
+        <div><label>Top-K</label>
+          <div class="slider-row">
+            <input type="range" id="topkSlider" min="5" max="20" value="10"
+              oninput="document.getElementById('topkVal').textContent=this.value">
+            <span class="sv" id="topkVal">10</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="retrieveBtn" onclick="retrieve()" disabled>
+      🔍 &nbsp;Extract &amp; Retrieve
+    </button>
+
+  </aside>
+
+  <!-- ── COL 2: QUERY ─────────────────────────────────── -->
+  <div class="col query-col">
+    <div class="sl">Query Image</div>
+
+    <div class="query-img-wrap" id="queryWrap">
+      <div class="query-placeholder" id="qPlaceholder">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="3"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        Select an image from the sidebar
+      </div>
+      <img id="queryImg" style="display:none" alt="Query">
+      <canvas id="cropCanvas"></canvas>
+    </div>
+
+    <div class="meta-block">
+      <div class="meta-title" id="metaTitle">—</div>
+      <div class="meta-row">
+        Dataset: <span id="metaDS">—</span> &nbsp;·&nbsp; File: <span id="metaFile">—</span>
+      </div>
+      <div id="cropInfo" style="font-family:var(--mono);font-size:.68rem;color:var(--accent);margin-top:3px;display:none"></div>
+    </div>
+
+    <div class="status-bar" id="statusBar">
+      <div class="spinner"></div>
+      <span id="statusTxt">Select an image and click Retrieve.</span>
+    </div>
+  </div>
+
+  <!-- ── COL 3: RESULTS ───────────────────────────────── -->
+  <div class="col results-col">
+    <div class="results-header">
+      <div class="results-title">Results</div>
+      <div class="results-actions">
+        <span class="prec-badge" id="precBadge"></span>
+        <button class="btn btn-ghost" id="snapBtn" onclick="takeSnapshot()" style="display:none">📷 Snapshot</button>
+      </div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      Results will appear here after retrieval.
+    </div>
+
+    <div class="results-grid" id="resultsGrid" style="display:none"></div>
+  </div>
+
+</div>
+</div>
+
+<!-- SNAPSHOT MODAL -->
+<div id="snapOverlay" onclick="closeSnap(event)">
+  <div class="snap-modal">
+    <img id="snapImg" src="" alt="Snapshot">
+    <div class="snap-actions">
+      <button class="btn btn-ghost" onclick="closeSnap()">Close</button>
+      <button class="btn btn-primary" style="width:auto;padding:8px 16px" onclick="downloadSnap()">⬇ Download PNG</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const S = {
+  dataset:'food-101', cls:null, img:null,
+  imageB64:null, cropB64:null, mode:'full',
+  dragging:false, sx:0, sy:0, cropRect:null,
+};
+
+window.addEventListener('DOMContentLoaded', () => { loadClasses(); setupCrop(); });
+
+document.getElementById('datasetSel').addEventListener('change', e => { S.dataset = e.target.value; loadClasses(); });
+document.getElementById('classSel').addEventListener('change',  e => { S.cls = e.target.value; loadImages(); });
+document.getElementById('imageSel').addEventListener('change',  e => { S.img = e.target.value; loadQueryImage(); });
+
+async function loadClasses() {
+  const classes = await api(`/api/classes?dataset=${S.dataset}`);
+  if (!classes) return;
+  const sel = document.getElementById('classSel');
+  sel.innerHTML = classes.map(c => `<option value="${c}">${c}</option>`).join('');
+  S.cls = classes[0] || null;
+  await loadImages();
+}
+
+async function loadImages() {
+  if (!S.cls) return;
+  const imgs = await api(`/api/images?dataset=${S.dataset}&cls=${enc(S.cls)}`);
+  if (!imgs) return;
+  const sel = document.getElementById('imageSel');
+  sel.innerHTML = imgs.map(i => `<option value="${i}">${i}</option>`).join('');
+  S.img = imgs[0] || null;
+  await loadQueryImage();
+}
+
+async function loadQueryImage() {
+  if (!S.cls || !S.img) return;
+  const data = await api(`/api/image?dataset=${S.dataset}&cls=${enc(S.cls)}&img=${enc(S.img)}`);
+  if (!data) return;
+  applyImage(data.b64);
+}
+
+async function loadRandom() {
+  const data = await api(`/api/random?dataset=${S.dataset}`);
+  if (!data) return;
+  S.cls = data.cls; S.img = data.img;
+  const classSel = document.getElementById('classSel');
+  if ([...classSel.options].some(o => o.value === data.cls)) classSel.value = data.cls;
+  const imgs = await api(`/api/images?dataset=${S.dataset}&cls=${enc(data.cls)}`);
+  if (imgs) {
+    const imgSel = document.getElementById('imageSel');
+    imgSel.innerHTML = imgs.map(i => `<option value="${i}">${i}</option>`).join('');
+    imgSel.value = data.img;
+  }
+  applyImage(data.b64);
+}
+
+function applyImage(b64) {
+  S.imageB64 = b64; S.cropB64 = null; S.cropRect = null;
+  clearCropCanvas();
+  const img = document.getElementById('queryImg');
+  img.src = `data:image/jpeg;base64,${b64}`;
+  img.style.display = 'block';
+  document.getElementById('qPlaceholder').style.display = 'none';
+  document.getElementById('cropInfo').style.display = 'none';
+  img.onload = resizeCropCanvas;
+  updateMeta();
+  document.getElementById('retrieveBtn').disabled = false;
+}
+
+function updateMeta() {
+  document.getElementById('metaTitle').textContent = (S.cls || '—').replace(/_/g,' ');
+  document.getElementById('metaDS').textContent    = S.dataset;
+  document.getElementById('metaFile').textContent  = S.img || '—';
+}
+
+// ── Mode ──────────────────────────────────────────────────
+function setMode(m) {
+  S.mode = m;
+  document.getElementById('modeFull').classList.toggle('active', m === 'full');
+  document.getElementById('modeCrop').classList.toggle('active', m === 'crop');
+  document.getElementById('cropHint').classList.toggle('visible', m === 'crop');
+  const cv = document.getElementById('cropCanvas');
+  cv.classList.toggle('active', m === 'crop');
+  if (m === 'full') { clearCropCanvas(); S.cropRect = null; S.cropB64 = null; document.getElementById('cropInfo').style.display = 'none'; }
+}
+
+// ── Crop ──────────────────────────────────────────────────
+function resizeCropCanvas() {
+  const img = document.getElementById('queryImg');
+  const cv  = document.getElementById('cropCanvas');
+  cv.width  = img.offsetWidth;
+  cv.height = img.offsetHeight;
+}
+
+function setupCrop() {
+  const cv = document.getElementById('cropCanvas');
+  cv.addEventListener('mousedown', e => {
+    if (S.mode !== 'crop') return;
+    S.dragging = true;
+    const r = cv.getBoundingClientRect();
+    S.sx = e.clientX - r.left; S.sy = e.clientY - r.top;
+  });
+  cv.addEventListener('mousemove', e => {
+    if (!S.dragging) return;
+    const r = cv.getBoundingClientRect();
+    paintRect(S.sx, S.sy, e.clientX - r.left, e.clientY - r.top);
+  });
+  cv.addEventListener('mouseup', e => {
+    if (!S.dragging) return;
+    S.dragging = false;
+    const r = cv.getBoundingClientRect();
+    const ex = e.clientX - r.left, ey = e.clientY - r.top;
+    const x = Math.min(S.sx,ex), y = Math.min(S.sy,ey);
+    const w = Math.abs(ex-S.sx),  h = Math.abs(ey-S.sy);
+    if (w < 10 || h < 10) return;
+    const img = document.getElementById('queryImg');
+    S.cropRect = {
+      x: Math.round(x * img.naturalWidth  / img.offsetWidth),
+      y: Math.round(y * img.naturalHeight / img.offsetHeight),
+      w: Math.round(w * img.naturalWidth  / img.offsetWidth),
+      h: Math.round(h * img.naturalHeight / img.offsetHeight),
+    };
+    buildCropB64();
+  });
+  window.addEventListener('resize', resizeCropCanvas);
+}
+
+function paintRect(x1,y1,x2,y2) {
+  const cv = document.getElementById('cropCanvas');
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle = 'rgba(0,0,0,.38)'; ctx.fillRect(0,0,cv.width,cv.height);
+  const rx=Math.min(x1,x2), ry=Math.min(y1,y2), rw=Math.abs(x2-x1), rh=Math.abs(y2-y1);
+  ctx.clearRect(rx,ry,rw,rh);
+  ctx.strokeStyle='#4A7560'; ctx.lineWidth=2; ctx.strokeRect(rx+1,ry+1,rw-2,rh-2);
+}
+
+function clearCropCanvas() {
+  const cv = document.getElementById('cropCanvas');
+  cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
+}
+
+function buildCropB64() {
+  if (!S.imageB64 || !S.cropRect) return;
+  const {x,y,w,h} = S.cropRect;
+  const tmp = new Image();
+  tmp.onload = () => {
+    const off = document.createElement('canvas');
+    off.width=w; off.height=h;
+    off.getContext('2d').drawImage(tmp,x,y,w,h,0,0,w,h);
+    S.cropB64 = off.toDataURL('image/jpeg',.92).split(',')[1];
+    const el = document.getElementById('cropInfo');
+    el.textContent = `Crop: ${w}×${h}px at (${x}, ${y})`;
+    el.style.display = 'block';
+  };
+  tmp.src = `data:image/jpeg;base64,${S.imageB64}`;
+}
+
+// ── Retrieve ──────────────────────────────────────────────
+async function retrieve() {
+  const b64 = S.mode === 'crop' && S.cropB64 ? S.cropB64 : S.imageB64;
+  if (!b64) { setStatus('No image loaded.', 'err'); return; }
+
+  // Only pass query_class in full-picture mode so server can compute is_correct properly.
+  // In crop mode we skip match/miss since the crop may not represent the whole class.
+  const queryClass = S.mode === 'crop' ? null : (S.cls || null);
+
+  const body = {
+    dataset: S.dataset,
+    query_class: queryClass,
+    feature:  document.getElementById('featureSel').value,
+    metric:   document.getElementById('metricSel').value,
+    method:   document.getElementById('methodSel').value,
+    top_k:    parseInt(document.getElementById('topkSlider').value),
+    image_b64: b64,
+  };
+
+  setStatus('Retrieving…', 'busy');
+  document.getElementById('retrieveBtn').disabled = true;
+
+  const data = await api('/api/retrieve', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  document.getElementById('retrieveBtn').disabled = false;
+  if (!data) return;
+
+  renderResults(data, queryClass);
+  setStatus(`Done · ${data.total} results retrieved.`, 'ok');
+
+  const badge = document.getElementById('precBadge');
+  if (queryClass) {
+    const pct = (data.precision*100).toFixed(0);
+    badge.textContent = `Precision@${data.total}: ${pct}%  (${data.n_correct}/${data.total})`;
+    badge.classList.add('on');
+  } else {
+    badge.classList.remove('on');
+  }
+  document.getElementById('snapBtn').style.display = '';
+}
+
+function renderResults(data, queryClass) {
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '';
+
+  // Normalise a label string for comparison: lowercase, collapse separators
+  const norm = s => s.toLowerCase().replace(/[\s_\-]+/g,'');
+  const normQuery = queryClass ? norm(queryClass) : null;
+
+  data.results.forEach((r, i) => {
+    const card = document.createElement('div');
+
+    // Determine match/miss only when we have a known query class
+    let cls = '';
+    if (normQuery !== null) {
+      cls = norm(r.label) === normQuery ? 'match' : 'miss';
+    }
+
+    card.className = `rc ${cls}`;
+    card.style.animationDelay = `${i*22}ms`;
+    card.innerHTML = `
+      <img src="data:image/jpeg;base64,${r.b64}" alt="${r.label}" loading="lazy">
+      <div class="rc-foot">
+        <div class="rc-rank">#${r.rank}</div>
+        <div class="rc-lbl">${r.label.replace(/_/g,' ')}</div>
+        <div class="rc-dist">${r.distance.toFixed(4)}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  grid.style.display = 'grid';
+  document.getElementById('emptyState').style.display = 'none';
+}
+
+// ── Snapshot ──────────────────────────────────────────────
+async function takeSnapshot() {
+  setStatus('Generating snapshot…', 'busy');
+  try {
+    const qCol = document.querySelector('.query-col');
+    const rCol = document.querySelector('.results-col');
+    const opts = { backgroundColor:'#F2F0EB', scale:2, useCORS:true, logging:false };
+    const [qc, rc] = await Promise.all([html2canvas(qCol, opts), html2canvas(rCol, opts)]);
+    const gap = 2;
+    const combined = document.createElement('canvas');
+    combined.width  = qc.width + rc.width + gap;
+    combined.height = Math.max(qc.height, rc.height);
+    const ctx = combined.getContext('2d');
+    ctx.fillStyle = '#CBC8C0'; ctx.fillRect(0,0,combined.width,combined.height);
+    ctx.drawImage(qc, 0, 0);
+    ctx.drawImage(rc, qc.width + gap, 0);
+    document.getElementById('snapImg').src = combined.toDataURL('image/png');
+    document.getElementById('snapOverlay').classList.add('open');
+    setStatus('Snapshot ready.', 'ok');
+  } catch(e) {
+    setStatus(`Snapshot failed: ${e.message}`, 'err');
+  }
+}
+
+function downloadSnap() {
+  const a = document.createElement('a');
+  a.href = document.getElementById('snapImg').src;
+  a.download = `cbir_${(S.cls||'query').replace(/\s/g,'_')}_${Date.now()}.png`;
+  a.click();
+}
+
+function closeSnap(e) {
+  if (!e || e.target === document.getElementById('snapOverlay'))
+    document.getElementById('snapOverlay').classList.remove('open');
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function setStatus(msg, type='') {
+  const bar = document.getElementById('statusBar');
+  bar.className = `status-bar ${type}`;
+  document.getElementById('statusTxt').textContent = msg;
+}
+
+async function api(url, opts={}) {
+  try {
+    const res = await fetch(url, opts);
+    if (!res.ok) { const e = await res.json().catch(()=>({detail:res.statusText})); setStatus(e.detail||'Server error.','err'); return null; }
+    return await res.json();
+  } catch(e) { setStatus(`Request failed: ${e.message}`,'err'); return null; }
+}
+
+const enc = encodeURIComponent;
+</script>
+</body>
+</html>

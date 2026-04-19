@@ -1,0 +1,11 @@
+.venv/
+report/
+__pycache__/
+*.pyc
+src/render_charts.py
+render_charts.py
+demo_video/
+demo_vid.mp4
+data/*
+!data/.gitkeep
+index/

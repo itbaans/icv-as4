@@ -1,0 +1,10 @@
+opencv-python
+numpy
+scikit-image
+scikit-learn
+matplotlib
+scipy
+tqdm
+fastapi
+uvicorn
+python-multipart
