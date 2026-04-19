@@ -22,8 +22,10 @@ pip install -r requirements.txt
 ### 3. Download the Data
 Run the provided scripts to automatically download and prepare the datasets into their proper directories inside the `data/` folder:
 ```powershell
-python src/download_food101.py
-python src/download_paris6k.py
+cd src
+python download_food101.py --samples_per_class -1 --output_dir ../data/food101 --hf_token YOUR_TOKEN_HERE
+python download_paris6k.py
+cd ..
 ```
 
 ### 4. Build the Index
